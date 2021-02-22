@@ -35,10 +35,12 @@ void enableRawMode()
 
     // ICRNL for carriage returns + new lines, fixing Ctrl-M
     // IXON manages Ctrl-S (stops the sending output to terminal) and Ctrl-Q (resumes output to terminal). XON vs XOFF.
-    raw_mode_settings.c_iflag &= ~(ICRNL | IXON); // for "input" flags
+    raw_mode_settings.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON); // for "input" flags
 
     // OPOST for disabling \n and \r\n output processing translation, a common default (+ holdover from typwriters/teletype!)
     raw_mode_settings.c_oflag &= ~(OPOST); // "output" flags
+
+    raw_mode_settings.c_cflag |= (CS8);
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_mode_settings);
 }

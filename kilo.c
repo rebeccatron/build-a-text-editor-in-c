@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
@@ -7,10 +8,20 @@
 // config object
 struct termios users_termios_settings;
 
+void die(const char *message)
+{
+    // most c library functions will set the global errno variable to indicate the error code.
+    // perror looks at the global errnoo & prints a descriptive error for it
+    // perror also formats any message you wish to provide to make debugging easier
+    perror(message);
+    exit(1);
+}
+
 void disableRawMod()
 {
     // TCSCAFLUSH --> "drain output, flush input"
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &users_termios_settings);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &users_termios_settings) == -1)
+        die("tcsetattr while disabling raw mode");
 }
 
 // configures terminal to provide a more interactive experience in main
@@ -18,7 +29,8 @@ void enableRawMode()
 {
 
     // nab the user's default terminal settings
-    tcgetattr(STDIN_FILENO, &users_termios_settings);
+    if (tcgetattr(STDIN_FILENO, &users_termios_settings) == -1)
+        die("tcgetattr");
 
     // then, restore those settings "at exit"
     // man: atexit -- register a function to be called on exit
@@ -48,7 +60,8 @@ void enableRawMode()
     raw_mode_settings.c_cc[VMIN] = 0;
     raw_mode_settings.c_cc[VTIME] = 1; // 1/10 of a second or 100 milliseconds
 
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_mode_settings);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_mode_settings) == -1)
+        die("tcsetattr while enabling raw mode");
 }
 
 int main()
@@ -58,7 +71,9 @@ int main()
     while (1)
     {
         char c = '\0';
-        read(STDIN_FILENO, &c, 1);
+        if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN)
+            die("read");
+
         if (iscntrl(c)) // control characters are non-printable control characters we shouldn't print to screen (ASCII 0-31 + 127 are all control)
         {
             printf("Control: %d\r\n", c); // need our own \r to return cursors to leftmost side of screen!

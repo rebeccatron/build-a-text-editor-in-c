@@ -1,3 +1,5 @@
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
 #include <unistd.h>
@@ -27,22 +29,36 @@ void enableRawMode()
 
     // ECHO causes each key to print to terminal --> not needed for user interface in raw mode
     // ICANON manages canonical mode. With it off, we'll read input byte-by-byte not line-by-line
-    raw_mode_settings.c_lflag &= ~(ECHO | ICANON); // for "local" flags (vs. c_cflag for "control" flags)
-    // ^ turns off ONLY the echo + icanon bits via bitwise NOT "anded" with the existing fields flag so that the ECHO bit turns "off".
+    // ISIG manages Ctrl-C (SIGINT --> "terminate") and Ctrl-Z (SIGTSTP --> "suspend")
+    // IEXTEN for Ctrl-V (paste) and Ctrl-O
+    raw_mode_settings.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN); // for "local" flags (vs. c_cflag for "control" flags)
+
+    // ICRNL for carriage returns + new lines, fixing Ctrl-M
+    // IXON manages Ctrl-S (stops the sending output to terminal) and Ctrl-Q (resumes output to terminal). XON vs XOFF.
+    raw_mode_settings.c_iflag &= ~(ICRNL | IXON); // for "input" flags
+
+    // OPOST for disabling \n and \r\n output processing translation, a common default (+ holdover from typwriters/teletype!)
+    raw_mode_settings.c_oflag &= ~(OPOST); // "output" flags
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_mode_settings);
 }
 
 int main()
 {
-    char c;
-
     enableRawMode();
 
-    // read 1 byte from standard input into char variable c
-    // stop once read fails to return 1 byte read (i.e. nothing left to read --> EOF)
+    char c;
     while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
-        ;
+    {
+        if (iscntrl(c)) // control characters are non-printable control characters we shouldn't print to screen (ASCII 0-31 + 127 are all control)
+        {
+            printf("Control: %d\r\n", c); // need our own \r to return cursors to leftmost side of screen!
+        }
+        else
+        {
+            printf("Printable: %d ('%c')\r\n", c, c); // ASCII codes 32-126 are all printable
+        }
+    }
 
     return 0;
 }

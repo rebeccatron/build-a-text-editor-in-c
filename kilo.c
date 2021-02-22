@@ -42,6 +42,12 @@ void enableRawMode()
 
     raw_mode_settings.c_cflag |= (CS8);
 
+    // VMIN + VTIME are indices into the c_cc field (stands for "control characters") --> byte array with terminal settings
+    // VMIN: Min number of bytes of input needed before read() can return. Setting it to 0 makes it respond as soon as ANY input is available to read.
+    // VTIME: Max amount of time to wait between read() returns, in tenths of a second
+    raw_mode_settings.c_cc[VMIN] = 0;
+    raw_mode_settings.c_cc[VTIME] = 1; // 1/10 of a second or 100 milliseconds
+
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_mode_settings);
 }
 
@@ -49,9 +55,10 @@ int main()
 {
     enableRawMode();
 
-    char c;
-    while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q')
+    while (1)
     {
+        char c = '\0';
+        read(STDIN_FILENO, &c, 1);
         if (iscntrl(c)) // control characters are non-printable control characters we shouldn't print to screen (ASCII 0-31 + 127 are all control)
         {
             printf("Control: %d\r\n", c); // need our own \r to return cursors to leftmost side of screen!
@@ -60,6 +67,9 @@ int main()
         {
             printf("Printable: %d ('%c')\r\n", c, c); // ASCII codes 32-126 are all printable
         }
+
+        if (c == 'q')
+            break;
     }
 
     return 0;

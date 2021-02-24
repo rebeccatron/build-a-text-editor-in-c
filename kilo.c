@@ -7,6 +7,13 @@
 #include <termios.h>
 #include <unistd.h>
 
+/*** definitions ***/
+
+// MACRO to bitwise AND's the character with 00011111
+// --> Sets the top 3 bits of the charactor to 0
+// --> CTRL key does something similar in terminal: strips bits 5 & 6 from the associated key and sends that as input.
+#define CTRL_KEY(k) ((k)&0x1f)
+
 /*** data ***/
 
 struct termios users_termios_settings;
@@ -67,7 +74,7 @@ int main()
             printf("Printable: %d ('%c')\r\n", c, c);
         }
 
-        if (c == 'q')
+        if (c == CTRL_KEY('q')) // frees up the actual 'q' character!
             break;
     }
 

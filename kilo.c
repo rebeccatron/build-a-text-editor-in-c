@@ -53,6 +53,36 @@ void enableRawMode()
         die("tcsetattr while enabling raw mode");
 }
 
+// Wait for a single keypress, then return it.
+char editorReadKey()
+{
+    int n_read;
+    char c;
+
+    while ((n_read = read(STDIN_FILENO, &c, 1)) != 1)
+    {
+        if (n_read == -1 && errno != EAGAIN)
+            die("read");
+    }
+
+    return c;
+}
+
+/*** input ***/
+
+// Handles each key press, and soon will map CTRL key combos --> editor functions
+void editorProcessKeyPress()
+{
+    char c = editorReadKey();
+
+    switch (c)
+    {
+    case CTRL_KEY('q'):
+        exit(0);
+        break;
+    }
+}
+
 /*** init ***/
 
 int main()
@@ -61,21 +91,8 @@ int main()
 
     while (1)
     {
-        char c = '\0';
-        if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN)
-            die("read");
-
-        if (iscntrl(c))
-        {
-            printf("Control: %d\r\n", c);
-        }
-        else
-        {
-            printf("Printable: %d ('%c')\r\n", c, c);
-        }
-
-        if (c == CTRL_KEY('q')) // frees up the actual 'q' character!
-            break;
+        // a simple main, KISS.
+        editorProcessKeyPress();
     }
 
     return 0;

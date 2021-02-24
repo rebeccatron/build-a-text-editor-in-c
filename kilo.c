@@ -80,6 +80,44 @@ char editorReadKey()
     return c;
 }
 
+int getCursorPosition(int *rows, int *cols)
+{
+    // n command queries the terminal for status info
+    // 6 as argument to ask for cursor position
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        return -1;
+
+    printf("\r\n");
+    char c;
+    // See "Current Position Report" https://vt100.net/docs/vt100-ug/chapter3.html#CPR
+    // read the reply from std input
+    /* results:
+        27
+        91 ('[')
+        53 ('5')
+        49 ('1')
+        59 (';')
+        49 ('1')
+        48 ('0')
+        49 ('1')
+        82 ('R')
+        --> 51 x 101 
+    */
+    while (read(STDIN_FILENO, &c, 1) == 1)
+    {
+        if (iscntrl(c))
+        {
+            printf("%d\r\n", c);
+        }
+        else
+        {
+            printf("%d ('%c')\r\n", c, c);
+        }
+    }
+    editorReadKey();
+    return -1;
+}
+
 int getWindowSize(int *rows, int *cols)
 {
     struct winsize ws;
@@ -92,6 +130,8 @@ int getWindowSize(int *rows, int *cols)
         // note: C + B specifically  protect against going  "off screen"
         if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
             return -1;
+
+        return getCursorPosition(rows, cols);
 
         editorReadKey(); // pause a beat to check position before death
         return -1;

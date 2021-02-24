@@ -22,6 +22,10 @@ struct termios users_termios_settings;
 
 void die(const char *message)
 {
+    // clear screen & reposition cursor on exit
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+
     perror(message);
     exit(1);
 }
@@ -68,6 +72,21 @@ char editorReadKey()
     return c;
 }
 
+/*** output ***/
+
+void editorRefreshScreen()
+{
+    // CLEAR THE SCREEN write 4 bytes to terminal:
+    // --> 1st byte: \x1b (27 in decimal), the escape character
+    // --> 2nd-4th bytes: [2J, the "Erase in Display" command that clears the entire screen
+    write(STDOUT_FILENO, "\x1b[2J", 4);
+
+    // RESET CURSOR POSITION
+    // --> Moves cursor to position specified by params (line position + column position)
+    // --> Using default of (1, 1) or first row at first col. Note: numbers start at 1, not 0!
+    write(STDOUT_FILENO, "\x1b[H", 3);
+}
+
 /*** input ***/
 
 // Handles each key press, and soon will map CTRL key combos --> editor functions
@@ -78,6 +97,11 @@ void editorProcessKeyPress()
     switch (c)
     {
     case CTRL_KEY('q'):
+
+        // clear screen & reposition cursor on quit
+        write(STDOUT_FILENO, "\x1b[2J", 4);
+        write(STDOUT_FILENO, "\x1b[H", 3);
+
         exit(0);
         break;
     }
@@ -92,6 +116,7 @@ int main()
     while (1)
     {
         // a simple main, KISS.
+        editorRefreshScreen();
         editorProcessKeyPress();
     }
 

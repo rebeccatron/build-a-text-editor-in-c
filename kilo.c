@@ -74,6 +74,16 @@ char editorReadKey()
 
 /*** output ***/
 
+void editorDrawRows()
+{
+    int y;
+
+    for (y = 0; y < 24; y++)
+    {
+        write(STDOUT_FILENO, "~\r\n", 3);
+    }
+}
+
 void editorRefreshScreen()
 {
     // CLEAR THE SCREEN write 4 bytes to terminal:
@@ -84,6 +94,10 @@ void editorRefreshScreen()
     // RESET CURSOR POSITION
     // --> Moves cursor to position specified by params (line position + column position)
     // --> Using default of (1, 1) or first row at first col. Note: numbers start at 1, not 0!
+    write(STDOUT_FILENO, "\x1b[H", 3);
+
+    editorDrawRows();
+
     write(STDOUT_FILENO, "\x1b[H", 3);
 }
 

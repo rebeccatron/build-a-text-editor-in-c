@@ -85,8 +85,15 @@ int getWindowSize(int *rows, int *cols)
     struct winsize ws;
 
     // TIOCGWINSZ: Terminal IOCtl (which itself stands for Input/Output Control) Get WINdow SiZe.)
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+    // temporarily walk this if path (because 1 is true) to test
+    if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
     {
+        // C (cursor forward) + B (cursor down) to the 999 max to get to the bottom right of the screen
+        // note: C + B specifically  protect against going  "off screen"
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+            return -1;
+
+        editorReadKey(); // pause a beat to check position before death
         return -1;
     }
     else

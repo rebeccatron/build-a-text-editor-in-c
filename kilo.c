@@ -82,38 +82,33 @@ char editorReadKey()
 
 int getCursorPosition(int *rows, int *cols)
 {
+    char buf[32];
+
     // n command queries the terminal for status info
     // 6 as argument to ask for cursor position
     if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
         return -1;
 
-    printf("\r\n");
-    char c;
-    // See "Current Position Report" https://vt100.net/docs/vt100-ug/chapter3.html#CPR
-    // read the reply from std input
-    /* results:
-        27
-        91 ('[')
-        53 ('5')
-        49 ('1')
-        59 (';')
-        49 ('1')
-        48 ('0')
-        49 ('1')
-        82 ('R')
-        --> 51 x 101 
-    */
-    while (read(STDIN_FILENO, &c, 1) == 1)
+    unsigned int i = 0;
+    while (i < sizeof(buf) - 1)
     {
-        if (iscntrl(c))
-        {
-            printf("%d\r\n", c);
-        }
-        else
-        {
-            printf("%d ('%c')\r\n", c, c);
-        }
+        if (read(STDIN_FILENO, &buf[i], 1) != 1)
+            break;
+
+        if (buf[i] == 'R')
+            break;
+
+        i++;
     }
+
+    // must terminate the "string"!
+    buf[i] = '\0';
+
+    // Format the string from index 1 --> end (i.e. skip the \x1b escape character)
+    printf("\r\n&buf[1]: '%s'\r\n", &buf[1]);
+
+    // TODO: extract the numbers and set to rows/cols
+
     editorReadKey();
     return -1;
 }

@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -139,6 +140,43 @@ int getWindowSize(int *rows, int *cols)
         *cols = ws.ws_col;
         return 0;
     }
+}
+
+/*** append buffer ***/
+
+struct append_buffer
+{
+    int len;
+    char *buf;
+};
+
+#define ABUF_INIT \
+    {             \
+        0, NULL   \
+    }
+
+void abAppend(struct append_buffer *ab, const char *s, int len)
+{
+    // need enough memory to hold the old + new
+    // realloc will handle two possibilities:
+    // --> extending the size of the block we *already* have (e.g. ab->buff)
+    // --> OR...freeing whhat we already have & allocating a new block that's big enough
+    char *new = realloc(ab->buf, ab->len + len);
+
+    if (new == NULL)
+        return;
+
+    // copies s into the end of the buffer
+    memcpy(&new[ab->len], s, len);
+
+    // bookkeeping (our struct needs updating)
+    ab->buf = new;
+    ab->len += len;
+}
+
+void abFree(struct append_buffer *ab)
+{
+    free(ab->buf);
 }
 
 /*** output ***/

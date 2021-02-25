@@ -198,6 +198,9 @@ void editorRefreshScreen()
 {
     struct append_buffer ab = ABUF_INIT;
 
+    // reset mode, for hiding the cursor
+    abAppend(&ab, "\x1b[?25l", 6);
+
     // CLEAR THE SCREEN write 4 bytes to terminal:
     // --> 1st byte: \x1b (27 in decimal), the escape character
     // --> 2nd-4th bytes: [2J, the "Erase in Display" command that clears the entire screen
@@ -211,6 +214,9 @@ void editorRefreshScreen()
     editorDrawRows(&ab);
 
     abAppend(&ab, "\x1b[H", 3);
+
+    // set mode, for showing the cursor once again
+    abAppend(&ab, "\x1b[?25h", 6);
 
     // write it ALL in one pass
     write(STDOUT_FILENO, ab.buf, ab.len);

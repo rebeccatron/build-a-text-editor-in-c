@@ -181,34 +181,41 @@ void abFree(struct append_buffer *ab)
 
 /*** output ***/
 
-void editorDrawRows()
+void editorDrawRows(struct append_buffer *ab)
 {
     int y;
 
     for (y = 0; y < E.screenrows; y++)
     {
-        write(STDOUT_FILENO, "~", 1);
+        abAppend(ab, "~", 1);
 
         if (y < E.screenrows - 1)
-            write(STDOUT_FILENO, "\r\n", 2);
+            abAppend(ab, "\r\n", 2);
     }
 }
 
 void editorRefreshScreen()
 {
+    struct append_buffer ab = ABUF_INIT;
+
     // CLEAR THE SCREEN write 4 bytes to terminal:
     // --> 1st byte: \x1b (27 in decimal), the escape character
     // --> 2nd-4th bytes: [2J, the "Erase in Display" command that clears the entire screen
-    write(STDOUT_FILENO, "\x1b[2J", 4);
+    abAppend(&ab, "\x1b[2J", 4);
 
     // RESET CURSOR POSITION
     // --> Moves cursor to position specified by params (line position + column position)
     // --> Using default of (1, 1) or first row at first col. Note: numbers start at 1, not 0!
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[H", 3);
 
-    editorDrawRows();
+    editorDrawRows(&ab);
 
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[H", 3);
+
+    // write it ALL in one pass
+    write(STDOUT_FILENO, ab.buf, ab.len);
+
+    abFree(&ab);
 }
 
 /*** input ***/

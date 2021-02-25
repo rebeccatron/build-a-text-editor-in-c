@@ -89,6 +89,7 @@ int getCursorPosition(int *rows, int *cols)
     if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
         return -1;
 
+    // read query response to buffer
     unsigned int i = 0;
     while (i < sizeof(buf) - 1)
     {
@@ -104,13 +105,14 @@ int getCursorPosition(int *rows, int *cols)
     // must terminate the "string"!
     buf[i] = '\0';
 
-    // Format the string from index 1 --> end (i.e. skip the \x1b escape character)
-    printf("\r\n&buf[1]: '%s'\r\n", &buf[1]);
+    // extract the numbers and set to rows/cols
+    if (buf[0] != '\x1b' || buf[1] != '[')
+        return -1; // malformed response
 
-    // TODO: extract the numbers and set to rows/cols
+    if (sscanf(&buf[2], "%d;%d", rows, cols) != 2)
+        return -1;
 
-    editorReadKey();
-    return -1;
+    return 0;
 }
 
 int getWindowSize(int *rows, int *cols)
@@ -119,7 +121,7 @@ int getWindowSize(int *rows, int *cols)
 
     // TIOCGWINSZ: Terminal IOCtl (which itself stands for Input/Output Control) Get WINdow SiZe.)
     // temporarily walk this if path (because 1 is true) to test
-    if (1 || ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
     {
         // C (cursor forward) + B (cursor down) to the 999 max to get to the bottom right of the screen
         // note: C + B specifically  protect against going  "off screen"

@@ -11,6 +11,13 @@
 
 /*** definitions ***/
 
+#define KILO_VERSION "0.0.1"
+
+#define ABUF_INIT \
+    {             \
+        0, NULL   \
+    }
+
 // MACRO to bitwise AND's the character with 00011111
 // --> Sets the top 3 bits of the charactor to 0
 // --> CTRL key does something similar in terminal: strips bits 5 & 6 from the associated key and sends that as input.
@@ -150,11 +157,6 @@ struct append_buffer
     char *buf;
 };
 
-#define ABUF_INIT \
-    {             \
-        0, NULL   \
-    }
-
 void abAppend(struct append_buffer *ab, const char *s, int len)
 {
     // need enough memory to hold the old + new
@@ -189,6 +191,10 @@ void editorDrawRows(struct append_buffer *ab)
     {
         abAppend(ab, "~", 1);
 
+        // Erase In Line command
+        // --> 1st byte: \x1b (27 in decimal), the escape character
+        // --> 2nd-3rd bytes: [K, 0 is default and clears the part of the line to the "right" of the cursor
+        abAppend(ab, "\x1b[K", 3);
         if (y < E.screenrows - 1)
             abAppend(ab, "\r\n", 2);
     }
@@ -200,11 +206,6 @@ void editorRefreshScreen()
 
     // reset mode, for hiding the cursor
     abAppend(&ab, "\x1b[?25l", 6);
-
-    // CLEAR THE SCREEN write 4 bytes to terminal:
-    // --> 1st byte: \x1b (27 in decimal), the escape character
-    // --> 2nd-4th bytes: [2J, the "Erase in Display" command that clears the entire screen
-    abAppend(&ab, "\x1b[2J", 4);
 
     // RESET CURSOR POSITION
     // --> Moves cursor to position specified by params (line position + column position)

@@ -222,6 +222,23 @@ void editorDrawRows(struct append_buffer *ab) {
   }
 }
 
+void editorMoveCursor(char key) {
+    switch (key) {
+        case 'w':
+            E.cursorY--;
+            break;
+        case 'a':
+            E.cursorX--;
+            break;
+        case 's':
+            E.cursorY++;
+            break;
+        case 'd':
+            E.cursorX++;
+            break;
+    }
+}
+
 void editorRefreshScreen()
 {
     struct append_buffer ab = ABUF_INIT;
@@ -237,6 +254,7 @@ void editorRefreshScreen()
     editorDrawRows(&ab);
 
     char buf[32];
+    // the terminal is 1-indexed, so we translate our cursor positions.
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cursorY + 1, E.cursorX + 1);
     abAppend(&ab, buf, strlen(buf));
 
@@ -266,6 +284,13 @@ void editorProcessKeyPress()
 
         exit(0);
         break;
+    
+    case 'w':
+    case 'a':
+    case 's':
+    case 'd':
+        editorMoveCursor(c);
+        break;
     }
 }
 
@@ -287,8 +312,6 @@ int main()
 
     while (1)
     {
-        E.cursorX++;
-        E.cursorY++;
         // a simple main, KISS.
         editorRefreshScreen();
         editorProcessKeyPress();

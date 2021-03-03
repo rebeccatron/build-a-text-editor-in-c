@@ -27,6 +27,8 @@
 
 struct editorConfig
 {
+    int cursorX;
+    int cursorY;
     int screenrows;
     int screencols;
     struct termios users_termios_settings;
@@ -234,7 +236,9 @@ void editorRefreshScreen()
 
     editorDrawRows(&ab);
 
-    abAppend(&ab, "\x1b[H", 3);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cursorY + 1, E.cursorX + 1);
+    abAppend(&ab, buf, strlen(buf));
 
     // set mode, for showing the cursor once again
     abAppend(&ab, "\x1b[?25h", 6);
@@ -269,6 +273,9 @@ void editorProcessKeyPress()
 
 void initEditor()
 {
+    E.cursorX = 0;
+    E.cursorY = 0;
+
     if (getWindowSize(&E.screenrows, &E.screencols) == -1)
         die("getWindowSize");
 }
@@ -280,6 +287,8 @@ int main()
 
     while (1)
     {
+        E.cursorX++;
+        E.cursorY++;
         // a simple main, KISS.
         editorRefreshScreen();
         editorProcessKeyPress();

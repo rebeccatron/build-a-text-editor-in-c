@@ -183,21 +183,41 @@ void abFree(struct append_buffer *ab)
 
 /*** output ***/
 
-void editorDrawRows(struct append_buffer *ab)
-{
-    int y;
 
-    for (y = 0; y < E.screenrows; y++)
-    {
+void editorDrawRows(struct append_buffer *ab) {
+  int y;
+  
+  for (y = 0; y < E.screenrows; y++) {
+    if (y == E.screenrows / 3) {
+      char welcome[80];
+
+      int welcomelen = snprintf(welcome, sizeof(welcome),
+        "Kilo editor -- version %s", KILO_VERSION);
+
+      if (welcomelen > E.screencols)
+            welcomelen = E.screencols;
+      
+      int padding = (E.screencols - welcomelen) / 2;
+      if (padding) {
         abAppend(ab, "~", 1);
-
-        // Erase In Line command
-        // --> 1st byte: \x1b (27 in decimal), the escape character
-        // --> 2nd-3rd bytes: [K, 0 is default and clears the part of the line to the "right" of the cursor
-        abAppend(ab, "\x1b[K", 3);
-        if (y < E.screenrows - 1)
-            abAppend(ab, "\r\n", 2);
+        padding--;
+      }
+      while (padding--) abAppend(ab, " ", 1);
+      
+      abAppend(ab, welcome, welcomelen);
+    } else {
+      abAppend(ab, "~", 1);
     }
+    
+    // Erase In Line command
+    // --> 1st byte: \x1b (27 in decimal), the escape character
+    // --> 2nd-3rd bytes: [K, 0 is default and clears the part of the line 
+    // to the "right" of the cursor
+    abAppend(ab, "\x1b[K", 3);
+    if (y < E.screenrows - 1) {
+      abAppend(ab, "\r\n", 2);
+    }
+  }
 }
 
 void editorRefreshScreen()
